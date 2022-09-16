@@ -5,11 +5,11 @@ import csv
 
 
 class Book:
-    # generate fields by calling evry funtion definig them
+    # generate fields
     def generate_data(self, url):
         itemData = {}
-        itemData |= self.item_url(url)
-        itemData.update(self.itemDataFromProductInformations(url))
+        itemData.update(self.item_url(url))
+        itemData.update(self.item_upc_prices_stocks(url))
         itemData.update(self.item_desc_reviews(url))
         itemData.update(self.item_category(url))
         itemData.update(self.item_title(url))
@@ -25,23 +25,23 @@ class Book:
     def item_url(self, url):
         return {'product_page_url': url}
 
-    def itemDataFromProductInformations(self, url):
+    def item_upc_prices_stocks(self, url):
         data = self.get_data(url)
 
         for tr in data.find_all('tr'):
             if 'UPC' in tr.text:
                 upc = tr.td.text
-            elif 'Price (excl. tax)' in tr.text:
-                price_excluding_tax = tr.td.text.replace('Â', '')
-            elif 'Price (incl. tax)' in tr.text:
-                price_including_tax = tr.td.text.replace('Â', '')
+            elif 'excl' in tr.text:
+                priceExclTax = tr.td.text.replace('Â', '')
+            elif 'incl' in tr.text:
+                priceInclTax = tr.td.text.replace('Â', '')
             elif 'Availability' in tr.text:
-                number_aviable = tr.td.text.replace('In stock (', '').replace(' available)','')
+                stock = tr.td.text.split(' ')[3].replace('(', '')
         return {
             'upc': upc,
-            'price_excluding_tax': price_excluding_tax,
-            'price_including_tax': price_including_tax,
-            'number_available': number_aviable
+            'price_excluding_tax': priceExclTax,
+            'price_including_tax': priceInclTax,
+            'number_available': stock
         }
 
     def item_desc_reviews(self, url):
@@ -73,8 +73,9 @@ class Book:
         imageUrl = data.img['src'].replace(
             '../..', 'http://books.toscrape.com')
         image = requests.get(imageUrl)
+        category = self.item_category(url)
         title = self.item_title(url)
-        path = 'data' + '/imgs'
+        path = 'data/' + category['category'] + '/imgs'
         imageTitle = ''.join(
             [x for x in title['title'] if x.isalnum()]) + '.jpg'
         if not os.path.exists(path):
@@ -84,14 +85,15 @@ class Book:
 
 
 # csv generation
-def generateCsv(currentItem, name):
-    print("printing")
+def generateCsv(itemList):
     columns = ['product_page_url', 'upc', 'title', 'price_including_tax', 'price_excluding_tax',
                'number_available', 'product_description', 'category', 'review_rating', 'image_url', 'image_path']
 
-    csvFile = f'{name}.csv'
+    category = itemList[0]['category']
+    csvFile = f'{category}.csv'
 
-    with open(f'./data/{name}.csv', 'w', errors='replace') as csvFile:
+    with open(f'./data/{category}/{csvFile}', 'w', errors='replace') as csvFile:
         file = csv.DictWriter(csvFile, delimiter=";", fieldnames=columns)
         file.writeheader()
-        file.writerow(currentItem)
+        for data in itemList:
+            file.writerow(data)
