@@ -1,3 +1,8 @@
+# Extractor
+
+This project is a scrapper for the WebSite: `http://books.toscrape.com/`
+You can extract one caterory from it or all books
+
 ## Installation:
 
 Clone the project

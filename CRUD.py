@@ -59,6 +59,8 @@ class Book:
     # function looks for classes to get the star review, if the object has no class
     # its the description so I put it in a decription variable
     def item_description_and_reviews(self, url):
+        # empty des cription security
+        description = ""
         data = self.get_data(url)
         for p in data.find_all("p"):
             try:
@@ -68,9 +70,10 @@ class Book:
                 # because the request looks like p.star-rating.Note and i need ".Note" so the 2nd class
                 if "star-rating" in classes_of_p_that_have_class:
                     review = classes_of_p_that_have_class[1]
-            # if no class: <p> is decription
             except KeyError:
                 description = p.text
+            # if no class: <p> is decription
+
         return {"review_rating": review, "product_description": description}
 
     # title is the only <h1> tag so simple scrap
@@ -133,7 +136,7 @@ def generateCsv(itemList):
 
     # opens the right file as a csv
     with open(f"./data/{category}/{csvFile}", "w", errors="replace") as csvFile:
-        # writes colums
+        # writes rows
         file = csv.DictWriter(csvFile, delimiter=";", fieldnames=columns)
         file.writeheader()
         for data in itemList:
